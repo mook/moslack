@@ -1,4 +1,5 @@
-#component {44bfbca4-cc23-433d-a166-8e4ea6e73b5f} prpl.js
-#contract @mozilla.org/chat/slack;1 {44bfbca4-cc23-433d-a166-8e4ea6e73b5f}
-#category im-protocol-plugin prpl-slack @mozilla.org/chat/slack;1
-content moslack ./
+component {44bfbca4-cc23-433d-a166-8e4ea6e73b5f} prpl.js
+contract @mozilla.org/chat/slack;1 {44bfbca4-cc23-433d-a166-8e4ea6e73b5f}
+category im-protocol-plugin prpl-slack @mozilla.org/chat/slack;1
+content moslack content/
+overlay chrome://messenger/content/chat/imAccountWizard.xul chrome://moslack/content/imAccountWizardOverlay.xul

@@ -12,9 +12,21 @@ function startup(data, reason) {
                                SlackPrpl.prototype.name,
                                SlackPrpl.prototype.contractID,
                                NSGetFactory(SlackPrpl.prototype.classID));
+    Cc["@mozilla.org/categorymanager;1"]
+      .getService(Ci.nsICategoryManager)
+      .addCategoryEntry("im-protocol-plugin",
+                        "prpl-slack",
+                        SlackPrpl.prototype.contractID,
+                        false,
+                        true);
 }
 
 function shutdown(data, reason) {
+    Cc["@mozilla.org/categorymanager;1"]
+      .getService(Ci.nsICategoryManager)
+      .deleteCategoryEntry("im-protocol-plugin",
+                           "prpl-slack",
+                           false);
     Components.manager
               .nsIComponentRegistrar
               .unregisterFactory(SlackPrpl.prototype.classID,

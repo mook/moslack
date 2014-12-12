@@ -4,12 +4,15 @@ FILES := \
 	install.rdf \
 	bootstrap.js \
 	chrome.manifest \
-	*.jsm \
+	prpl.js \
+	$(wildcard content/*) \
 	${NULL}
+
+moslack.xpi: Makefile
 
 moslack.xpi: ${FILES}
 	-rm -f $@
-	@zip $@ $^
+	@zip -r $@ $^
 
 install.rdf: install.rdf.rb
 	ruby $< > $@

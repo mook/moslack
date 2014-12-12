@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay PUBLIC
+    "-//MOZILLA//DTD XUL V1.0//EN"
+    "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<overlay id="moslackImAccountWizardOverlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<script type="application/x-javascript;version=1.8"><![CDATA[
+(function() {
+    const { classes: Cc, utils: Cu } = Components;
+    const { OAuth2 } = Cu.import("resource:///modules/OAuth2.jsm", {});
+
+    // the proto uses a singleton factory, so this works.
+    var proto = Cc["@mozilla.org/chat/slack;1"].getService().wrappedJSObject;
+    var page = document.getElementById('accountusername');
+    var old_handler = new Function("event", page.getAttribute('onpageshow'));
+    page.removeAttribute('onpageshow');
+
+    try {
+    var oauth = new OAuth2("https://slack.com/",
+                           "identify,read,post");
+    oauth.authURI = "https://slack.com/oauth/authorize";
+    oauth.tokenURI = "https://slack.com/api/oauth.access";
+    oauth.completionURI = "https://moslack.invalid/oauth/";
+    oauth.consumerKey = proto.clientID;
+    oauth.consumerSecret = proto.clientSecret;
+
+    Cu.reportError("adding listener...");
+    page.addEventListener('pageshow', function(event) {
+        Cu.reportError("pageshow!");
+        if (accountWizard.proto.id != 'prpl-slack') {
+            return old_handler(event);
+        }
+
+        try {
+            Cu.reportError("On the right path...");
+            var vbox = document.getElementById("userNameBox");
+            // remove anything that may be there for another protocol
+            while (vbox.hasChildNodes()) {
+                vbox.lastChild.remove();
+            }
+
+            var fakeUserNameBox = {
+                get value() {
+                    return "";
+                }
+            };
+            accountWizard.userNameBoxes = [fakeUserNameBox];
+            accountWizard.checkUsername();
+            Cu.reportError("Trying to connect...");
+            oauth.connect(() => {
+                Cu.reportError('success!' + oauth.accessToken);
+            }, (data) => {
+                Cu.reportError('Failure! ' + JSON.stringify(data));
+            }, true);
+        } catch(e) {
+            Cu.reportError(e);
+            throw e;
+        }
+        return undefined;
+    });
+    Cu.reportError("Listener added");
+
+    } catch(e) {
+        Cu.reportError(e);
+        throw e;
+    }
+})();
+]]></script>
+</overlay>

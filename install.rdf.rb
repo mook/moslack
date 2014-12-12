@@ -7,7 +7,7 @@ puts %Q{
     <em:id>moslack@mook.github.io</em:id>
     <em:version>0.0.0.#{Time.now.utc.strftime '%Y%m%d'}.#{Time.now.utc.to_i}</em:version>
     <em:type>2</em:type>
-    <em:bootstrap>true</em:bootstrap>
+    <!-- <em:bootstrap>true</em:bootstrap> -->
     <em:unpack>false</em:unpack>
 
     <em:targetApplication>
