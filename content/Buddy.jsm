@@ -23,4 +23,6 @@ function SlackAccountBuddy(aAccount, aUserData) {
 
 SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
     get normalizedName() this._data.id,
+
+    toString() `<Buddy ${this.displayName}(${this.normalizedName})>`,
 });

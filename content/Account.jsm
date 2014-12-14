@@ -29,10 +29,12 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
         SlackOAuth
             .connect(true, this.imAccount.password)
             .then(({token}) => {
-              this.DEBUG("Connected to " + this.name);
-              // Setting the password here causes an infinite reconnect loop
-              //this.imAccount.password = token;
-              this.token = token;
+                this.DEBUG("Connected to " + this.name);
+                if (token != this.imAccount.password) {
+                    // This seems to cause a reconnect...
+                    this.imAccount.password = token;
+                }
+                this.token = token;
             })
             .then(() => SlackOAuth.request('rtm.start', {token: this.token}))
             .then((response) => {
@@ -47,6 +49,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     let buddy = new SlackAccountBuddy(this, userData);
                     buddies.set(userData.id, buddy);
                     buddiesByName.set(userData.name, buddy);
+                    this.DEBUG("buddy: " + buddy);
                 }
                 this.buddies = buddies;
                 this.buddiesByName = buddiesByName;
@@ -56,7 +59,9 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 this.DEBUG("Loading channels from response");
                 let channels = new Map();
                 for (let channelData of response.channels) {
-                    channels[channelData.id] = new SlackChannel(this, channelData);
+                    let channel = new SlackChannel(this, channelData);
+                    channels[channelData.id] = channel;
+                    this.DEBUG("channel: " + channel);
                 }
                 this.channels = channels;
                 return response;
