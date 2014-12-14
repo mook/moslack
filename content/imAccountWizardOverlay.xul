@@ -36,7 +36,7 @@
         try {
             Cu.reportError("Trying to connect...");
             SlackOAuth
-                .connect('hello')
+                .connect()
                 .then(({user, team, token})=>{
                     accountWizard.userNameBoxes = [{value: user},
                                                    {value: '@'},
