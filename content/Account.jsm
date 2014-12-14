@@ -91,6 +91,10 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     msg = e.message + "\n" + e.stack;
                 } else if (e instanceof Object) {
                     msg = JSON.stringify(e);
+                } else if ("error" in e) {
+                    msg = e.error;
+                } else if ("message" in e) {
+                    msg = e.message;
                 }
                 this.DEBUG("Failed to connect to " + this.name + ": " + msg);
                 e = e || { error: "Unknown Error" };
@@ -122,6 +126,16 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
     },
 
     onerror: function(event) {
+    },
+
+    request: function(api, data={}) {
+        let copy = {};
+        for (let prop of Object.keys(data)) {
+            copy[prop] = data[prop];
+        }
+        copy.token = this.token;
+        copy.id = new String(Date.now() + Math.random());
+        this.socket.send(JSON.stringify(copy));
     },
 
     token: null, /* OAuth access token */

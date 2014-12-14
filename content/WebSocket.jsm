@@ -38,10 +38,7 @@ WebSocket.prototype = Utils.extend(WebSocket.prototype, initLogModule('prpl-slac
         this.channel.close(code, reason);
     },
     get send() function(data) {
-        if (!(data instanceof String)) {
-            this.ERROR("Trying to send unsupported data " + data);
-            throw new Error("Sending unsupported data: " + data);
-        }
+        data = new String(data);
         this.DEBUG("Sending data " + data);
         this.channel.sendMsg(data);
     },

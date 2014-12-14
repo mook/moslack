@@ -7,7 +7,6 @@ const { utils: Cu } = Components;
 
 Cu.import("resource:///modules/jsProtoHelper.jsm");
 Cu.import("resource:///modules/imXPCOMUtils.jsm");
-Cu.import("chrome://moslack/content/SlackOAuth.jsm");
 Cu.import("chrome://moslack/content/Utils.jsm");
 
 function SlackChannel(aAccount, aChannelData) {
@@ -26,6 +25,16 @@ function SlackChannel(aAccount, aChannelData) {
 }
 
 SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
+    sendMsg: function(aMessage) {
+        this.DEBUG("Sending message " + aMessage);
+        this._account.request('chat.postMessage', {
+            type: "message",
+            channel: this._data.id,
+            text: aMessage,
+        })
+        .then((r) => this.DEBUG("Sent message: " + JSON.stringify(r)))
+        .catch((e) => this.DEBUG("Failed to send message: " + JSON.stringify(e)));
+    },
     toString() `<Channel ${this.name}>`,
 });
 
