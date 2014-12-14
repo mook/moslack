@@ -32,8 +32,18 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
             channel: this._data.id,
             text: aMessage,
         })
-        .then((r) => this.DEBUG("Sent message: " + JSON.stringify(r)))
-        .catch((e) => this.DEBUG("Failed to send message: " + JSON.stringify(e)));
+        .then((r) => {
+            this.DEBUG("Sent message: " + JSON.stringify(r));
+            return r;
+        })
+        .then((r) => {
+            r.user = this._account.self.id;
+            new SlackChatMessage(r, this);
+        })
+        .catch((e) => {
+            let message = e.error || e.message || JSON.stringify(e);
+            this.DEBUG("Failed to send message: " + message);
+        });
     },
     on_message: function(aMessage) {
         this.DEBUG("Parsing message " + JSON.stringify(aMessage));

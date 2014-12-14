@@ -12,6 +12,7 @@ Cu.import("chrome://moslack/content/WebSocket.jsm");
 function SlackAccount(aPrpl, aImAccount) {
     this._init(aPrpl, aImAccount);
     this.token = null;
+    this.self = null;
 }
 
 SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
@@ -40,6 +41,10 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             .then(() => SlackOAuth.request('rtm.start', {token: this.token}))
             .then((response) => {
                 this.DEBUG('RTM response:', JSON.stringify(response));
+                return response;
+            })
+            .then((response) => {
+                this.self = response.self;
                 return response;
             })
             .then((response) => {
@@ -131,6 +136,8 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             this.pending.delete(reply_to);
             callback(data);
             return;
+        } else if (reply_to) {
+            this.DEBUG("Replying to martian message " + reply_to);
         }
         this.DEBUG("Got message: " + JSON.stringify(data));
 
@@ -159,8 +166,9 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             copy[prop] = data[prop];
         }
         copy.token = this.token;
-        copy.id = new String(Date.now() + Math.random());
-        let promise = new Promise((resolve, reject) => {
+        let id = (Date.now() + Math.random()).toString();
+        copy.id = id;
+        return new Promise((resolve, reject) => {
             let onresponse = (message) => {
                 if (message.ok) {
                     resolve(message);
@@ -168,15 +176,17 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     reject(message);
                 }
             };
-            this.pending.set(copy.id, onresponse);
+            this.pending.set(id, onresponse);
+            this.DEBUG([x for (x of this.pending.keys())].join(", "));
+            this.socket.send(JSON.stringify(copy));
         });
-        this.socket.send(JSON.stringify(copy));
-        return promise;
     },
 
     token: null, /* OAuth access token */
 
     socket: null, /* WebSocket for the RTM connection */
+
+    self: null, /* data about this user */
 
     buddies: null, /* users known, by user id */
 
