@@ -26,6 +26,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
         this.reportConnecting();
         this.DEBUG("Connecting to " + this.name);
         this.socket = null;
+        this.pending = null;
         SlackOAuth
             .connect(true, this.imAccount.password)
             .then(({token}) => {
@@ -60,10 +61,11 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 let channels = new Map();
                 for (let channelData of response.channels) {
                     let channel = new SlackChannel(this, channelData);
-                    channels[channelData.id] = channel;
+                    channels.set(channelData.id, channel);
                     this.DEBUG("channel: " + channel);
                 }
                 this.channels = channels;
+                this.DEBUG("Channels: " + [c for (c in this.channels.values())].join(", "));
                 return response;
             })
             .then((response) => {
@@ -72,6 +74,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     let socket = new WebSocket(response.url);
                     socket.onopen = () => {
                         this.socket = socket;
+                        this.pending = new Map();
                         socket.onmessage = this.onmessage.bind(this);
                         socket.onerror = this.onerror.bind(this);
                         resolve(response);
@@ -122,7 +125,29 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
 
     onmessage: function(event) {
         let data = JSON.parse(event.data);
-        Cu.reportError(JSON.stringify(data));
+        let reply_to = data.reply_to || null;
+        if (reply_to && this.pending.has(reply_to)) {
+            let callback = this.pending.get(reply_to);
+            this.pending.delete(reply_to);
+            callback(data);
+            return;
+        }
+        this.DEBUG("Got message: " + JSON.stringify(data));
+
+        if ("channel" in data) {
+            if (this.channels.has(data.channel)) {
+                let channel = this.channels.get(data.channel);
+                try {
+                    channel["on_" + data.type](data);
+                } catch (e) {
+                    this.ERROR(e);
+                }
+            } else {
+                this.DEBUG(`Message for unknown channel ${data.channel} of [${[c for (c in this.channels.values())].join(", ")}]`);
+            }
+        } else {
+            this.DEBUG(`Unknown message ${JSON.stringify(data)}`);
+        }
     },
 
     onerror: function(event) {
@@ -135,7 +160,18 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
         }
         copy.token = this.token;
         copy.id = new String(Date.now() + Math.random());
+        let promise = new Promise((resolve, reject) => {
+            let onresponse = (message) => {
+                if (message.ok) {
+                    resolve(message);
+                } else {
+                    reject(message);
+                }
+            };
+            this.pending.set(copy.id, onresponse);
+        });
         this.socket.send(JSON.stringify(copy));
+        return promise;
     },
 
     token: null, /* OAuth access token */
@@ -146,5 +182,5 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
 
     buddiesByName: null, /* users known, by user name */
 
-    channels: null, /* channels */
+    channels: null, /* channels, by channel id */
 });

@@ -35,7 +35,11 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
         .then((r) => this.DEBUG("Sent message: " + JSON.stringify(r)))
         .catch((e) => this.DEBUG("Failed to send message: " + JSON.stringify(e)));
     },
-    toString() `<Channel ${this.name}>`,
+    on_message: function(aMessage) {
+        this.DEBUG("Parsing message " + JSON.stringify(aMessage));
+        (new SlackChatMessage(aMessage, this));
+    },
+    toString() `<Channel ${this.name} (${this._data.id})>`,
 });
 
 function SlackChatParticipant(aAccount, aUserId) {
@@ -46,4 +50,19 @@ SlackChatParticipant.prototype = Utils.extend(GenericConvChatBuddyPrototype, {
     get name() this.buddy.userName,
     get alias() this.buddy.displayName,
     toString() `<Participant ${this.buddy}>`,
+});
+
+function SlackChatMessage(data, aChannel) {
+    this._channel = aChannel;
+    this.DEBUG("New message in " + aChannel + ": " + JSON.stringify(data));
+    let user = this._channel._account.buddies.get(data.user);
+    this._init(user.displayName, data.text, data);
+    this.time = parseFloat(data.ts);
+    this.conversation = aChannel;
+}
+SlackChatMessage.prototype = Utils.extend(GenericMessagePrototype, {
+    get DEBUG() this._channel.DEBUG,
+    get LOG() this._channel.LOG,
+    get WARN() this._channel.WARN,
+    get ERROR() this._channel.ERROR,
 });
