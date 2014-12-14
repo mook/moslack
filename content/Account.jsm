@@ -161,13 +161,12 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
     },
 
     request: function(api, data={}) {
-        let copy = {};
-        for (let prop of Object.keys(data)) {
-            copy[prop] = data[prop];
-        }
-        copy.token = this.token;
         let id = (Date.now() + Math.random()).toString();
-        copy.id = id;
+        data = Object.assign({
+            token: this.token,
+            id: id,
+            type: api,
+        }, data);
         return new Promise((resolve, reject) => {
             let onresponse = (message) => {
                 if (message.ok) {
@@ -178,7 +177,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             };
             this.pending.set(id, onresponse);
             this.DEBUG([x for (x of this.pending.keys())].join(", "));
-            this.socket.send(JSON.stringify(copy));
+            this.socket.send(JSON.stringify(data));
         });
     },
 

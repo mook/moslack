@@ -27,8 +27,7 @@ function SlackChannel(aAccount, aChannelData) {
 SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
     sendMsg: function(aMessage) {
         this.DEBUG("Sending message " + aMessage);
-        this._account.request('chat.postMessage', {
-            type: "message",
+        this._account.request("message", {
             channel: this._data.id,
             text: aMessage,
         })
@@ -39,9 +38,19 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
         .then((r) => {
             r.user = this._account.self.id;
             new SlackChatMessage(r, this);
+            return r;
+        })
+        .then((r) => {
+            return this._account.request("channel_marked", {
+                channel: this._data.id,
+                ts: r.ts,
+            });
         })
         .catch((e) => {
-            let message = e.error || e.message || JSON.stringify(e);
+            let message = e.error || e.message || e;
+            if (typeof(message) != "string") {
+                message = JSON.stringify(message);
+            }
             this.DEBUG("Failed to send message: " + message);
         });
     },
