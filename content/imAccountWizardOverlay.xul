@@ -7,63 +7,58 @@
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <script type="application/x-javascript;version=1.8"><![CDATA[
 (function() {
-    const { classes: Cc, utils: Cu } = Components;
-    const { OAuth2 } = Cu.import("resource:///modules/OAuth2.jsm", {});
+    try{
+    const { classes: Cc, interfaces: Ci } = Components;
+    const Cu = Object.create(Components.utils, {
+        reportError: { value: function () { dump(Array.concat.apply([], arguments)) ; dump('\n'); } }
+    });
+    const { SlackOAuth } = Cu.import("chrome://moslack/content/SlackOAuth.jsm");
+    const { Services } = Cu.import("resource://gre/modules/Services.jsm");
 
     // the proto uses a singleton factory, so this works.
     var proto = Cc["@mozilla.org/chat/slack;1"].getService().wrappedJSObject;
-    var page = document.getElementById('accountusername');
-    var old_handler = new Function("event", page.getAttribute('onpageshow'));
-    page.removeAttribute('onpageshow');
 
-    try {
-    var oauth = new OAuth2("https://slack.com/",
-                           "identify,read,post");
-    oauth.authURI = "https://slack.com/oauth/authorize";
-    oauth.tokenURI = "https://slack.com/api/oauth.access";
-    oauth.completionURI = "https://moslack.invalid/oauth/";
-    oauth.consumerKey = proto.clientID;
-    oauth.consumerSecret = proto.clientSecret;
-
-    Cu.reportError("adding listener...");
-    page.addEventListener('pageshow', function(event) {
-        Cu.reportError("pageshow!");
+    let wizard = document.documentElement;
+    wizard.addEventListener('wizardnext', (event) =>
+    {
+        if (!wizard.currentPage) {
+            return;
+        }
+        if (wizard.currentPage.id != 'accountprotocol') {
+            dump('unintersting page');
+            return;
+        }
         if (accountWizard.proto.id != 'prpl-slack') {
-            return old_handler(event);
+            dump("uninteresting proto " + accountWizard.proto.id + '\n');
+            return;
         }
 
         try {
-            Cu.reportError("On the right path...");
-            var vbox = document.getElementById("userNameBox");
-            // remove anything that may be there for another protocol
-            while (vbox.hasChildNodes()) {
-                vbox.lastChild.remove();
-            }
-
-            var fakeUserNameBox = {
-                get value() {
-                    return "";
-                }
-            };
-            accountWizard.userNameBoxes = [fakeUserNameBox];
-            accountWizard.checkUsername();
             Cu.reportError("Trying to connect...");
-            oauth.connect(() => {
-                Cu.reportError('success!' + oauth.accessToken);
-            }, (data) => {
-                Cu.reportError('Failure! ' + JSON.stringify(data));
-            }, true);
+            SlackOAuth
+                .connect('hello')
+                .then(({user, team, token})=>{
+                    accountWizard.userNameBoxes = [{value: user},
+                                                   {value: '@'},
+                                                   {value: team}];
+                    document.getElementById("password").value = token;
+                    document.getElementById("accountWizard").canAdvance = true;
+                    document.getElementById("accountusername").next = 'accountadvanced';
+
+                    wizard.goTo('accountadvanced');
+                })
+                .catch((e)=> {
+                    Cu.reportError('failure!', e);
+                });
+            document.getElementById("accountWizard").canAdvance = false;
+            event.preventDefault();
         } catch(e) {
             Cu.reportError(e);
             throw e;
         }
-        return undefined;
-    });
-    Cu.reportError("Listener added");
-
-    } catch(e) {
-        Cu.reportError(e);
-        throw e;
+    }, true);
+    } catch (e) {
+        dump(e);
     }
 })();
 ]]></script>
