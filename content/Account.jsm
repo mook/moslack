@@ -140,17 +140,32 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             this.DEBUG("Replying to martian message " + reply_to);
         }
         this.DEBUG("Got message: " + JSON.stringify(data));
+        let handler = "on_" + data.type;
 
         if ("channel" in data) {
             if (this.channels.has(data.channel)) {
                 let channel = this.channels.get(data.channel);
-                try {
-                    channel["on_" + data.type](data);
-                } catch (e) {
-                    this.ERROR(e);
+                if (handler in channel) {
+                    try {
+                        channel[handler](data);
+                    } catch (e) {
+                        try {
+                            channel.ERROR(e);
+                        } catch(e2) {
+                            this.ERROR(e);
+                        }
+                    }
+                    return;
                 }
             } else {
                 this.DEBUG(`Message for unknown channel ${data.channel} of [${[c for (c in this.channels.values())].join(", ")}]`);
+            }
+        }
+        if (handler in this) {
+            try {
+                this[handler](data);
+            } catch(e) {
+                this.ERROR(e);
             }
         } else {
             this.DEBUG(`Unknown message ${JSON.stringify(data)}`);
@@ -158,6 +173,10 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
     },
 
     onerror: function(event) {
+    },
+
+    on_hello: function(event) {
+        /* nothing */
     },
 
     request: function(api, data={}) {

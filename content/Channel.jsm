@@ -40,12 +40,6 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
             new SlackChatMessage(r, this);
             return r;
         })
-        .then((r) => {
-            return this._account.request("channel_marked", {
-                channel: this._data.id,
-                ts: r.ts,
-            });
-        })
         .catch((e) => {
             let message = e.error || e.message || e;
             if (typeof(message) != "string") {
