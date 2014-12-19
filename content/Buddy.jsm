@@ -6,12 +6,14 @@
 const EXPORTED_SYMBOLS = [ "SlackAccountBuddy" ];
 const { interfaces: Ci, utils: Cu } = Components;
 
+Cu.import("resource:///modules/imServices.jsm");
 Cu.import("resource:///modules/jsProtoHelper.jsm");
 Cu.import("chrome://moslack/content/SlackOAuth.jsm");
 Cu.import("chrome://moslack/content/Utils.jsm");
 
 function SlackAccountBuddy(aAccount, aUserData) {
-    this._init(aAccount, null, null, aUserData.name);
+    let tag = Services.tags.defaultTag;
+    this._init(aAccount, null, tag, aUserData.name);
     this._data = aUserData;
     /*
     // This doesn't work whem imBuddy is null

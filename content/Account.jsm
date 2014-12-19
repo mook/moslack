@@ -2,6 +2,7 @@ const EXPORTED_SYMBOLS = ["SlackAccount"];
 const { interfaces: Ci, results: Cr, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Preferences.jsm");
+Cu.import("resource:///modules/imServices.jsm");
 Cu.import("resource:///modules/jsProtoHelper.jsm");
 Cu.import("chrome://moslack/content/SlackOAuth.jsm");
 Cu.import("chrome://moslack/content/Buddy.jsm");
@@ -56,6 +57,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     buddies.set(userData.id, buddy);
                     buddiesByName.set(userData.name, buddy);
                     this.DEBUG("buddy: " + buddy);
+                    Services.contacts.accountBuddyAdded(buddy);
                 }
                 this.buddies = buddies;
                 this.buddiesByName = buddiesByName;
