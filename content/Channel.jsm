@@ -7,6 +7,7 @@ const { utils: Cu } = Components;
 
 Cu.import("resource:///modules/jsProtoHelper.jsm");
 Cu.import("resource:///modules/imXPCOMUtils.jsm");
+Cu.import("chrome://moslack/content/SlackOAuth.jsm");
 Cu.import("chrome://moslack/content/Utils.jsm");
 
 function SlackChannel(aAccount, aChannelData) {
@@ -28,6 +29,7 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
         this.notifyObservers(new nsSimpleEnumerator(this._participants.values()),
                              "chat-buddy-add");
     },
+
     sendMsg: function(aMessage) {
         this.DEBUG("Sending message " + aMessage);
         this._account.request("message", {
@@ -51,6 +53,7 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
             this.DEBUG("Failed to send message: " + message);
         });
     },
+
     systemMessage: function(aMessage, aIsError, aDate) {
         let flags = {system: true};
         if (aIsError) {
@@ -61,11 +64,30 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
         }
         this.writeMessage("slack", aMessage, flags);
     },
+
     on_message: function(aMessage) {
         this.DEBUG("Parsing message " + JSON.stringify(aMessage));
         (new SlackChatMessage(aMessage, this));
     },
+
     toString() `<Channel ${this.name} (${this._data.id})>`,
+
+    get topicSettable() true,
+
+    get topic() this._topic,
+    set topic(val) {
+        SlackOAuth.request("channels.setTopic", {
+            token: this._account.token,
+            channel: this._data.id,
+            topic: val,
+        }).then((data) => {
+            // Don't set the conversation topic from here; instead, deal with
+            // the incoming topic change message from RTM.
+            this.DEBUG(`set topic response: ${JSON.stringify(data)}`);
+        }).catch((r) => {
+            this.DEBUG(`Failed to set topic: ${JSON.stringify(r)}`);
+        });
+    },
 });
 
 function SlackChatParticipant(aAccount, aUserId) {
