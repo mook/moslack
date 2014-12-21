@@ -11,20 +11,23 @@ Cu.import("chrome://moslack/content/Utils.jsm");
 
 function SlackChannel(aAccount, aChannelData) {
     this._init(aAccount, aChannelData.name, aAccount.name);
-    this._data = aChannelData;
-    this.setTopic(aChannelData.topic.value,
-                  aChannelData.topic.creator,
-                  true);
-    for (let member of this._data.members) {
-        let participant = new SlackChatParticipant(this._account, member);
-        this._participants.set(member, participant);
-    }
-    this.DEBUG("participants: " + [x for (x of this._participants.values())]);
-    this.notifyObservers(new nsSimpleEnumerator(this._participants.values()),
-                         "chat-buddy-add");
+    this.update(aChannelData);
 }
 
 SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
+    update: function(aChannelData) {
+        this._data = aChannelData;
+        this.setTopic(aChannelData.topic.value,
+                      aChannelData.topic.creator,
+                      true);
+        for (let member of this._data.members) {
+            let participant = new SlackChatParticipant(this._account, member);
+            this._participants.set(member, participant);
+        }
+        this.DEBUG("participants: " + [x for (x of this._participants.values())]);
+        this.notifyObservers(new nsSimpleEnumerator(this._participants.values()),
+                             "chat-buddy-add");
+    },
     sendMsg: function(aMessage) {
         this.DEBUG("Sending message " + aMessage);
         this._account.request("message", {
@@ -47,6 +50,16 @@ SlackChannel.prototype = Utils.extend(GenericConvChatPrototype, {
             }
             this.DEBUG("Failed to send message: " + message);
         });
+    },
+    systemMessage: function(aMessage, aIsError, aDate) {
+        let flags = {system: true};
+        if (aIsError) {
+            flags.error = true;
+        }
+        if (aDate) {
+            flags.time = aDate;
+        }
+        this.writeMessage("slack", aMessage, flags);
     },
     on_message: function(aMessage) {
         this.DEBUG("Parsing message " + JSON.stringify(aMessage));

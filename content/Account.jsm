@@ -67,7 +67,12 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 this.DEBUG("Loading channels from response");
                 let channels = new Map();
                 for (let channelData of response.channels) {
-                    let channel = new SlackChannel(this, channelData);
+                    let channel;
+                    if (this.channels && this.channels.has(channelData.id)) {
+                        channel = this.channels.get(channelData.id);
+                    } else {
+                        channel = new SlackChannel(this, channelData);
+                    }
                     channels.set(channelData.id, channel);
                     this.DEBUG("channel: " + channel);
                 }
@@ -108,19 +113,22 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 }
                 this.DEBUG("Failed to connect to " + this.name + ": " + msg);
                 e = e || { error: "Unknown Error" };
-                this.reportDisconnecting(Ci.prplIAccount.ERROR_OTHER_ERROR,
-                                         e.error || e.message || e);
-                this.disconnect();
+                this.disconnect(Ci.prplIAccount.ERROR_OTHER_ERROR,
+                                e.error || e.message || e);
             });
         this.DEBUG("Waiting for oauth");
     },
-    disconnect: function() {
+    disconnect: function(aError, aErrorMessage) {
+        this.reportDisconnecting(Ci.prplIAccount.NO_ERROR, '');
         if (this.socket) {
             this.socket.close(CloseEvent.CLOSE_GOING_AWAY);
             this.socket = null;
         }
+        for (let [id, channel] of this.channels || []) {
+            channel.notifyObservers(channel, "update-conv-chatleft");
+        }
         this.reportDisconnected();
-    },
+},
 
     createConversation: function(aName) {
         throw Cr.NS_ERROR_NOT_IMPLEMENTED;
