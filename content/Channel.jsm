@@ -85,6 +85,12 @@ function SlackChatMessage(data, aChannel) {
     this._init(user.displayName, data.text, data);
     this.time = parseFloat(data.ts);
     this.conversation = aChannel;
+    switch (data.subtype) {
+        case "channel_topic":
+            this.system = true;
+            aChannel.setTopic(data.topic, user, true);
+            break;
+    }
 }
 SlackChatMessage.prototype = Utils.extend(GenericMessagePrototype, {
     get DEBUG() this._channel.DEBUG,
