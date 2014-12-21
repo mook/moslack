@@ -15,6 +15,7 @@ function WebSocket(aURLSpec, aProtocols=[]) {
     if (!Array.isArray(aProtocols)) {
         aProtocols = [aProtocols];
     }
+    this.readyState = WebSocket.CONNECTING;
     aProtocols = aProtocols.filter(p => p instanceof String);
     this.DEBUG("Creating WebSocket for " + aURLSpec +
                " with protocols " + aProtocols.join(", "));
@@ -56,6 +57,7 @@ WebSocket.prototype = Utils.extend(WebSocket.prototype, initLogModule('prpl-slac
     // nsIWebSocketListner
     get onStart() function(aContext) {
         this.DEBUG("onStart");
+        this.readyState = WebSocket.OPEN;
         this.onopen(new Event("open"));
     },
     get onStop() function(aContext, aStatusCode) {
