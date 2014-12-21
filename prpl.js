@@ -17,7 +17,7 @@ SlackPrpl.prototype = Utils.extend(GenericProtocolPrototype, {
     get name() "Slack",
 
     get iconBaseURI() "chrome://moslack/content/",
-    get imagesInIM() true,
+    get imagesInIM() false,
 
     getAccount: function (aImAccount) new SlackAccount(this, aImAccount),
     get usernameSplits() [

@@ -189,6 +189,29 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
         /* nothing */
     },
 
+    on_presence_change: function(data) {
+        let buddy;
+        let state = data.presence;
+        if (!this.buddies) {
+            this.WARN("Got presence change with no buddy list, invalid state!?");
+            return;
+        }
+        if (this.buddies.has(data.user)) {
+            buddy = this.buddies.get(data.user);
+        } else {
+            this.WARN(`presence change for unknown buddy ${data.user} not implemented`);
+            return;
+        }
+        switch (data.presense) {
+            case "active":
+                buddy.setStatus(Ci.imIStatusInfo.STATUS_AVAILABLE);
+                break;
+            case "away":
+                buddy.setStatus(Ci.imIStatusInfo.STATUS_AWAY);
+                break;
+        }
+    },
+
     request: function(api, data={}) {
         let id = (Date.now() + Math.random()).toString();
         data = Object.assign({
