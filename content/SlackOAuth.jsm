@@ -114,6 +114,7 @@ const SlackOAuth = initLogModule("prpl-slack", {
                         reject({error: responseText});
                         return;
                     }
+                    this.DEBUG(`${api} response: ${JSON.stringify(response)}`);
                     if (response.ok !== true) {
                         reject(response);
                     } else {

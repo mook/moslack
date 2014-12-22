@@ -65,7 +65,6 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     buddy.setStatus(userData.presence == 'active' ?
                         Ci.imIStatusInfo.STATUS_AVAILABLE :
                         Ci.imIStatusInfo.STATUS_OFFLINE);
-
                 }
                 this.buddies = buddies;
                 this.buddiesByName = buddiesByName;
@@ -83,6 +82,27 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     }
                     channels.set(channelData.id, channel);
                     this.DEBUG("channel: " + channel);
+                }
+                this.DEBUG("Channels: " + [c for (c in channels.values())].join(", "));
+                return [response, channels];
+            })
+            .then(([response, channels]) => {
+                this.DEBUG("Loading IMs from response");
+                for (let channelData of response.ims) {
+                    let buddy = this.buddies.get(channelData.user);
+                    if (!buddy) {
+                        this.WARN(`Loading IM from unknown user ${channelData.user}`);
+                        continue;
+                    }
+                    let channel;
+                    if (this.channels && this.channels.has(channelData.id)) {
+                        channel = this.channels.get(channelData.id);
+                    } else {
+                        channel = new SlackBuddyConversation(this, buddy);
+                    }
+                    channel.update(channelData);
+                    channels.set(channelData.id, channel);
+                    this.DEBUG(`IM: ${channel}`);
                 }
                 this.channels = channels;
                 this.DEBUG("Channels: " + [c for (c in this.channels.values())].join(", "));
@@ -218,6 +238,21 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 buddy.setStatus(Ci.imIStatusInfo.STATUS_OFFLINE);
                 break;
         }
+    },
+
+    on_team_join: function(aData) {
+        if (this.buddies.has(aData.user.id)) {
+            this.buddies.get(aData.user.id).update(aData);
+            return;
+        }
+        let buddy = new SlackAccountBuddy(this, aData.user);
+        this.buddies.set(aData.user.id, buddy);
+        this.buddiesByName.set(aData.user.name, buddy);
+        this.DEBUG("team join: " + buddy);
+        Services.contacts.accountBuddyAdded(buddy);
+        buddy.setStatus(aData.user.presence == 'active' ?
+            Ci.imIStatusInfo.STATUS_AVAILABLE :
+            Ci.imIStatusInfo.STATUS_OFFLINE);
     },
 
     request: function(api, data={}) {

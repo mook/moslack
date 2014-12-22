@@ -6,10 +6,21 @@
 const EXPORTED_SYMBOLS = [ "Utils" ];
 
 const Utils = {
-    extend: function(aBase, aExtension) {
+    assign: function(aTarget, ...aSources) {
+        for (let source of aSources) {
+            let props = {};
+            for (let prop of Object.getOwnPropertyNames(source)) {
+                props[prop] = Object.getOwnPropertyDescriptor(source, prop);
+            }
+            Object.definedProperties(aTarget, props);
+        }
+    },
+    extend: function(aBase, ...aExtensions) {
         var props = {};
-        for (let prop of Object.getOwnPropertyNames(aExtension)) {
-            props[prop] = Object.getOwnPropertyDescriptor(aExtension, prop);
+        for (let extension of aExtensions) {
+            for (let prop of Object.getOwnPropertyNames(extension)) {
+                props[prop] = Object.getOwnPropertyDescriptor(extension, prop);
+            }
         }
         return Object.create(aBase, props);
     }
