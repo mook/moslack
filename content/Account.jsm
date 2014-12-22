@@ -57,7 +57,15 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     buddies.set(userData.id, buddy);
                     buddiesByName.set(userData.name, buddy);
                     this.DEBUG("buddy: " + buddy);
-                    Services.contacts.accountBuddyAdded(buddy);
+                    try {
+                        Services.contacts.accountBuddyAdded(buddy);
+                    } catch (e) {
+                        this.DEBUG(e);
+                    }
+                    buddy.setStatus(userData.presence == 'active' ?
+                        Ci.imIStatusInfo.STATUS_AVAILABLE :
+                        Ci.imIStatusInfo.STATUS_OFFLINE);
+
                 }
                 this.buddies = buddies;
                 this.buddiesByName = buddiesByName;
@@ -191,7 +199,6 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
 
     on_presence_change: function(data) {
         let buddy;
-        let state = data.presence;
         if (!this.buddies) {
             this.WARN("Got presence change with no buddy list, invalid state!?");
             return;
@@ -202,12 +209,13 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             this.WARN(`presence change for unknown buddy ${data.user} not implemented`);
             return;
         }
-        switch (data.presense) {
+        this.DEBUG(`presence change: ${buddy} -> ${data.presence}`)
+        switch (data.presence) {
             case "active":
                 buddy.setStatus(Ci.imIStatusInfo.STATUS_AVAILABLE);
                 break;
             case "away":
-                buddy.setStatus(Ci.imIStatusInfo.STATUS_AWAY);
+                buddy.setStatus(Ci.imIStatusInfo.STATUS_OFFLINE);
                 break;
         }
     },
