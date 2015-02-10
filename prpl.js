@@ -26,6 +26,9 @@ SlackPrpl.prototype = Utils.extend(GenericProtocolPrototype, {
 
     get classID() Components.ID("{44bfbca4-cc23-433d-a166-8e4ea6e73b5f}"),
     get _xpcom_factory() XPCOMUtils.generateSingletonFactory(SlackPrpl),
+
+    get wrappedJSObject() this,
+    toString() `<SlackPrpl>`,
 });
 
 const NSGetFactory = XPCOMUtils.generateNSGetFactory([SlackPrpl]);

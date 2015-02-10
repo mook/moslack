@@ -49,7 +49,11 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
         return channel;
     },
 
-    toString() `<Buddy ${this.displayName}(${this.normalizedName})>`,
+    toString() `<SlackAccountBuddy ${this.displayName} (${this.normalizedName})>`,
+
+    classDescription: "SlackAccountBuddy object",
+
+    get wrappedJSObject() this,
 });
 
 function SlackBuddyConversation(aAccount, aBuddy) {
@@ -70,4 +74,8 @@ SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
     get normalizedName() this._data.id || this.buddy.id,
 
     toString() `<IM ${this.buddy.displayName}(${this.normalizedName})>`,
+
+    classDescription: "SlackBuddyConversation object",
+
+    get wrappedJSObject() this,
 });

@@ -287,4 +287,6 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
     buddiesByName: null, /* users known, by user name */
 
     channels: null, /* channels, by channel id */
+
+    toString() `<SlackAccount ${this.name}>`,
 });
