@@ -53,16 +53,21 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 let buddies = new Map();
                 let buddiesByName = new Map();
                 for (let userData of response.users) {
-                    let buddy = new SlackAccountBuddy(this, userData);
-                    buddies.set(userData.id, buddy);
-                    buddiesByName.set(userData.name, buddy);
-                    this.DEBUG("buddy: " + buddy);
-                    try {
-                        Services.contacts.accountBuddyAdded(buddy);
-                    } catch (e) {
-                        this.DEBUG(e);
+                    let accountBuddy = new SlackAccountBuddy(this, userData);
+                    buddies.set(userData.id, accountBuddy);
+                    buddiesByName.set(userData.name, accountBuddy);
+                    this.DEBUG(`accountBuddy: ${accountBuddy} account: ${this.imAccount} prpl: ${this.imAccount.protocol.wrappedJSObject}`);
+                    let buddy = Services.contacts.getBuddyByNameAndProtocol(userData.id, this.imAccount.protocol);
+                    if (buddy) {
+                        accountBuddy.buddy = buddy;
+                    } else {
+                        try {
+                            Services.contacts.accountBuddyAdded(accountBuddy);
+                        } catch (e) {
+                            this.DEBUG(e);
+                        }
                     }
-                    buddy.setStatus(userData.presence == 'active' ?
+                    accountBuddy.setStatus(userData.presence == 'active' ?
                         Ci.imIStatusInfo.STATUS_AVAILABLE :
                         Ci.imIStatusInfo.STATUS_OFFLINE);
                 }
