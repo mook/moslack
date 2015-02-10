@@ -30,11 +30,15 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
     },
 
     createConversation: function() {
-        if (this._account.channels.has(this._data.id)) {
-            return this._account.channels.get(this._data.id);
+        this.DEBUG(`Trying to create conversation with ${this}`);
+        if (this._data.id in this._account.channels) {
+            let channel = this._account.channels[this._data.id];
+            this.DEBUG(`Found existing conversation ${channel} with ${this}`);
+            channel.notifyObservers(null, "chat-update-topic");
+            return channel;
         }
         let channel = new SlackBuddyConversation(this._account, this);
-        this._account.channels.set(this._data.id, channel);
+        this._account.channels[this._data.id] = channel;
         SlackOAuth.request("im.open", {
             token: this._account.token,
             user: this._data.id,
@@ -45,7 +49,8 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
             this.DEBUG(`IM opened on ${r.channel.id}`);
         }).catch((r) => {
             this.DEBUG(`Failed to create conversation: ${r}`);
-        })
+        });
+        this.DEBUG(`Created new conversation ${channel} with ${this}`);
         return channel;
     },
 

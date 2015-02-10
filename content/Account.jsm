@@ -77,18 +77,32 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             })
             .then((response) => {
                 this.DEBUG("Loading channels from response");
-                let channels = new Map();
+                let channels = Object.create(null);
+                Object.defineProperty(channels, Symbol.iterator, {
+                    value: function() {
+                        let keys = Object.keys(this);
+                        return {
+                            next: function() {
+                                if (keys.length < 1) {
+                                    return { done: true };
+                                }
+                                let key = keys.shift();
+                                return { value: this[key], done: false };
+                            }.bind(this)
+                        };
+                    },
+                });
                 for (let channelData of response.channels) {
                     let channel;
-                    if (this.channels && this.channels.has(channelData.id)) {
-                        channel = this.channels.get(channelData.id);
+                    if (this.channels && (channelData.id in this.channels)) {
+                        channel = this.channels[channelData.id];
                     } else {
                         channel = new SlackChannel(this, channelData);
                     }
-                    channels.set(channelData.id, channel);
+                    channels[channelData.id] = channel;
                     this.DEBUG("channel: " + channel);
                 }
-                this.DEBUG("Channels: " + [c for (c in channels.values())].join(", "));
+                this.DEBUG(`Channels: ${[c for (c of channels)].join(", ")}`);
                 return [response, channels];
             })
             .then(([response, channels]) => {
@@ -100,17 +114,17 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                         continue;
                     }
                     let channel;
-                    if (this.channels && this.channels.has(channelData.id)) {
-                        channel = this.channels.get(channelData.id);
+                    if (this.channels && (channelData.id in this.channels)) {
+                        channel = this.channels[channelData.id];
                     } else {
                         channel = new SlackBuddyConversation(this, buddy);
                     }
                     channel.update(channelData);
-                    channels.set(channelData.id, channel);
+                    channels[channelData.id] = channel;
                     this.DEBUG(`IM: ${channel}`);
                 }
                 this.channels = channels;
-                this.DEBUG("Channels: " + [c for (c in this.channels.values())].join(", "));
+                this.DEBUG("Channels: " + [c for (c of this.channels)].join(", "));
                 return response;
             })
             .then((response) => {
@@ -157,7 +171,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             this.socket.close(CloseEvent.CLOSE_GOING_AWAY);
             this.socket = null;
         }
-        for (let [id, channel] of this.channels || []) {
+        for (let channel of this.channels || []) {
             channel.notifyObservers(channel, "update-conv-chatleft");
         }
         this.reportDisconnected();
@@ -186,8 +200,8 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
         let handler = "on_" + data.type;
 
         if ("channel" in data) {
-            if (this.channels.has(data.channel)) {
-                let channel = this.channels.get(data.channel);
+            if (data.channel in this.channels) {
+                let channel = this.channels[data.channel];
                 if (handler in channel) {
                     try {
                         channel[handler](data);
@@ -201,7 +215,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                     return;
                 }
             } else {
-                this.DEBUG(`Message for unknown channel ${data.channel} of [${[c for (c in this.channels.values())].join(", ")}]`);
+                this.DEBUG(`Message for unknown channel ${data.channel} of [${[c for (c of Object.keys(this.channels))].join(", ")}]`);
             }
         }
         if (handler in this) {
