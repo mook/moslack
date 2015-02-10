@@ -74,6 +74,30 @@ SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
         Object.assign(this._data, aData);
     },
 
+    close: function() {
+        Object.defineProperty(this, "DEBUG", {value: this._account.DEBUG});
+        this.DEBUG(`Closing conversation ${this} with ${this.buddy}`);
+        SlackOAuth.request("im.close", {
+            token: this._account.token,
+            channel: this.normalizedName
+        }).then((r) => {
+            try {
+                delete this._account.channels[this.buddy.normalizedName];
+                GenericConvIMPrototype.close.call(this);
+                this.DEBUG(`Closed conversation ${this} with ${this.buddy}`);
+            } catch (e) {
+                dump(`Error cleaning up closed conversation ${this}: ${e}`);
+            }
+        }).catch((r) => {
+            this.DEBUG(`Failed to close channel ${this} because ${r.error}`);
+            switch (r.error) {
+                case "channel_not_found":
+                    GenericConvIMPrototype.close.call(this);
+                    delete this._account.channels[this.buddy.normalizedName];
+            }
+        });
+    },
+
     get name() this.buddy.displayName,
 
     get normalizedName() this._data.id || this.buddy.id,
