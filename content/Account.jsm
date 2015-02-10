@@ -151,12 +151,18 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                 let msg = e;
                 if (e instanceof Error) {
                     msg = e.message + "\n" + e.stack;
-                } else if (e instanceof Object) {
-                    msg = JSON.stringify(e);
                 } else if ("error" in e) {
                     msg = e.error;
                 } else if ("message" in e) {
                     msg = e.message;
+                } else if (e instanceof Object) {
+                    msg = JSON.stringify(e);
+                    if (msg == "{}") {
+                        msg = Object.keys(e).join(", ");
+                        if (msg == "") {
+                            msg = Object.getOwnPropertyNames(e).join(", ");
+                        }
+                    }
                 }
                 this.DEBUG("Failed to connect to " + this.name + ": " + msg);
                 e = e || { error: "Unknown Error" };
