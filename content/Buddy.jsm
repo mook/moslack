@@ -57,8 +57,8 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
 });
 
 function SlackBuddyConversation(aAccount, aBuddy) {
-    this._init(aAccount, aBuddy.name);
     this.buddy = aBuddy;
+    this._init(aAccount, aBuddy.name);
     this._data = {};
 }
 
