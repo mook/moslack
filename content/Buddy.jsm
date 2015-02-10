@@ -44,8 +44,8 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
             user: this.normalizedName,
         }).then((r) => {
             channel.update(r);
-            channel.notifyObservers(new nsSimpleEnumerator([this]),
-                                    "chat-buddy-add");
+            // Don't notify "chat-buddy-add"; doing so will raise an exception
+            // because the buddy list is never shown for IMs.
             this.DEBUG(`IM opened on ${channel.slackId} for ${this}`);
         }).catch((r) => {
             this.DEBUG(`Failed to create conversation: ${r}`);
