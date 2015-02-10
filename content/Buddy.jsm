@@ -99,28 +99,24 @@ SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
         SlackOAuth.request("im.close", {
             token: this._account.token,
             channel: this.slackId
-        }).then((r) => {
-            try {
-                delete this._account.channels[this.buddy.normalizedName];
-                delete this._account.channels[this.slackId];
-                GenericConvIMPrototype.close.call(this);
-                this.DEBUG(`Closed conversation ${this} with ${this.buddy}`);
-            } catch (e) {
-                dump(`Error cleaning up closed conversation ${this}: ${e}`);
-            }
         }).catch((r) => {
             this.DEBUG(`Failed to close channel ${this} because ${r.error}`);
             switch (r.error) {
                 case "channel_not_found":
-                    GenericConvIMPrototype.close.call(this);
-                    delete this._account.channels[this.buddy.normalizedName];
-                    delete this._account.channels[this.slackId];
+                    this.on_im_close();
             }
         });
     },
 
     on_im_close: function(r) {
-       this.DEBUG(`Ignoring on_im_close message for ${this} with data ${JSON.stringify(r)}`);
+        try {
+            delete this._account.channels[this.buddy.normalizedName];
+            delete this._account.channels[this.slackId];
+            GenericConvIMPrototype.close.call(this);
+            this.DEBUG(`Closed conversation ${this}}`);
+        } catch (e) {
+            dump(`Error cleaning up closed conversation ${this}: ${e}\n${e.stack.split(/\n/)[0]}\n`);
+        }
     },
 
     get name() this.buddy.displayName,
