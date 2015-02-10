@@ -109,6 +109,10 @@ SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
         });
     },
 
+    on_im_close: function(r) {
+       this.DEBUG(`Ignoring on_im_close message for ${this} with data ${JSON.stringify(r)}`);
+    },
+
     get name() this.buddy.displayName,
 
     // IM ids are the buddy id; this is needed because when we initially create
