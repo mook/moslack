@@ -108,6 +108,9 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             .then(([response, channels]) => {
                 this.DEBUG("Loading IMs from response");
                 for (let channelData of response.ims) {
+                    if (channelData.is_open === false) {
+                        continue; // Don't load closed IMs
+                    }
                     let buddy = this.buddies.get(channelData.user);
                     if (!buddy) {
                         this.WARN(`Loading IM from unknown user ${channelData.user}`);
