@@ -7,7 +7,7 @@ Cu.import("chrome://moslack/content/Utils.jsm");
 const SlackGenericConversationMixin = {
 
     sendMsg: function(aMessage) {
-        this.DEBUG("Sending message " + aMessage);
+        this.DEBUG(`Sending message to ${this._data.id}: ${aMessage}`);
         this._account.request("message", {
             channel: this._data.id,
             text: aMessage,

@@ -31,22 +31,22 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
 
     createConversation: function() {
         this.DEBUG(`Trying to create conversation with ${this}`);
-        if (this._data.id in this._account.channels) {
-            let channel = this._account.channels[this._data.id];
+        if (this.normalizedName in this._account.channels) {
+            let channel = this._account.channels[this.normalizedName];
             this.DEBUG(`Found existing conversation ${channel} with ${this}`);
             channel.notifyObservers(null, "chat-update-topic");
             return channel;
         }
         let channel = new SlackBuddyConversation(this._account, this);
-        this._account.channels[this._data.id] = channel;
+        this._account.channels[this.normalizedName] = channel;
         SlackOAuth.request("im.open", {
             token: this._account.token,
-            user: this._data.id,
+            user: this.normalizedName,
         }).then((r) => {
             channel.update(r);
             channel.notifyObservers(new nsSimpleEnumerator([this]),
                                     "chat-buddy-add");
-            this.DEBUG(`IM opened on ${r.channel.id}`);
+            this.DEBUG(`IM opened on ${channel.slackId} for ${this}`);
         }).catch((r) => {
             this.DEBUG(`Failed to create conversation: ${r}`);
         });
@@ -62,16 +62,25 @@ SlackAccountBuddy.prototype = Utils.extend(GenericAccountBuddyPrototype, {
 });
 
 function SlackBuddyConversation(aAccount, aBuddy) {
+    aAccount.DEBUG(`Creating new SlackBuddyConversation with ${aBuddy}`);
+    this._data = {};
     this.buddy = aBuddy;
     this._init(aAccount, aBuddy.name);
-    this._data = {};
 }
 
 SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
                                                 SlackGenericConversationMixin,
                                                 {
     update: function(aData) {
-        Object.assign(this._data, aData);
+        this.DEBUG(`update: ${JSON.stringify(aData.channel || aData)}`);
+        Object.assign(this._data, aData.channel || aData);
+        if (this.slackId && this._account.channels) {
+            // Make sure the channel map knows about the Slack id; that is used
+            // for incoming messages.  This may not be set yet if this is a
+            // IM channel we created, since at that point we don't have the
+            // server-side ID yet.
+            this._account.channels[this.slackId] = this;
+        }
     },
 
     close: function() {
@@ -79,10 +88,11 @@ SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
         this.DEBUG(`Closing conversation ${this} with ${this.buddy}`);
         SlackOAuth.request("im.close", {
             token: this._account.token,
-            channel: this.normalizedName
+            channel: this.slackId
         }).then((r) => {
             try {
                 delete this._account.channels[this.buddy.normalizedName];
+                delete this._account.channels[this.slackId];
                 GenericConvIMPrototype.close.call(this);
                 this.DEBUG(`Closed conversation ${this} with ${this.buddy}`);
             } catch (e) {
@@ -94,15 +104,21 @@ SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
                 case "channel_not_found":
                     GenericConvIMPrototype.close.call(this);
                     delete this._account.channels[this.buddy.normalizedName];
+                    delete this._account.channels[this.slackId];
             }
         });
     },
 
     get name() this.buddy.displayName,
 
-    get normalizedName() this._data.id || this.buddy.id,
+    // IM ids are the buddy id; this is needed because when we initially create
+    // the conversation we don't know the actual channel id yet
+    get normalizedName() this.buddy.normalizedName,
 
-    toString() `<IM ${this.buddy.displayName}(${this.normalizedName})>`,
+    // This is the Slack channel id; may not be available.
+    get slackId() this._data.id || null,
+
+    toString() `<IM ${this.buddy.displayName}(${this.normalizedName}/${this.slackId || "<no id>"})>`,
 
     classDescription: "SlackBuddyConversation object",
 

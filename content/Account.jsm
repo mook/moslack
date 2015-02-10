@@ -114,13 +114,14 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                         continue;
                     }
                     let channel;
-                    if (this.channels && (channelData.id in this.channels)) {
-                        channel = this.channels[channelData.id];
+                    if (this.channels && (buddy.normalizedName in this.channels)) {
+                        channel = this.channels[buddy.normalizedName];
                     } else {
                         channel = new SlackBuddyConversation(this, buddy);
                     }
                     channel.update(channelData);
-                    channels[channelData.id] = channel;
+                    channels[buddy.normalizedName] = channel;
+                    channels[channel.slackId] = channel;
                     this.DEBUG(`IM: ${channel}`);
                 }
                 this.channels = channels;
@@ -184,10 +185,12 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
     },
 
     createConversation: function(aName) {
+        this.DEBUG(`SlackAccount::createConversation(${aName})`);
         throw Cr.NS_ERROR_NOT_IMPLEMENTED;
     },
 
     joinChat: function(aComponents) {
+        this.DEBUG(`SlackAccount::joinChat(${aComponents})`);
         throw Cr.NS_ERROR_NOT_IMPLEMENTED;
     },
 
@@ -218,11 +221,13 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
                             this.ERROR(e);
                         }
                     }
-                    return;
+                } else {
+                    this.DEBUG(`Message for channel ${channel} has no handler for ${handler}: ${JSON.stringify(data)}`);
                 }
             } else {
                 this.DEBUG(`Message for unknown channel ${data.channel} of [${[c for (c of Object.keys(this.channels))].join(", ")}]`);
             }
+            return;
         }
         if (handler in this) {
             try {
@@ -311,7 +316,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
 
     buddiesByName: null, /* users known, by user name */
 
-    channels: null, /* channels, by channel id */
+    channels: null, /* channels, by channel id; for IMs, also by user id */
 
     toString() `<SlackAccount ${this.name}>`,
 });
