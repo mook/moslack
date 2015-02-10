@@ -181,7 +181,7 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
             channel.notifyObservers(channel, "update-conv-chatleft");
         }
         this.reportDisconnected();
-},
+    },
 
     createConversation: function(aName) {
         throw Cr.NS_ERROR_NOT_IMPLEMENTED;
