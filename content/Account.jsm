@@ -3,6 +3,7 @@ const { interfaces: Ci, results: Cr, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Preferences.jsm");
 Cu.import("resource:///modules/imServices.jsm");
+Cu.import("resource:///modules/imXPCOMUtils.jsm");
 Cu.import("resource:///modules/jsProtoHelper.jsm");
 Cu.import("chrome://moslack/content/SlackOAuth.jsm");
 Cu.import("chrome://moslack/content/Buddy.jsm");
@@ -14,6 +15,7 @@ function SlackAccount(aPrpl, aImAccount) {
     this._init(aPrpl, aImAccount);
     this.token = null;
     this.self = null;
+    initLogModule(`${this.protocol.id}.${this.name}`, this);
 }
 
 SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
@@ -320,6 +322,8 @@ SlackAccount.prototype = Utils.extend(GenericAccountPrototype, {
     buddiesByName: null, /* users known, by user name */
 
     channels: null, /* channels, by channel id; for IMs, also by user id */
+
+    get wrappedJSObject() this,
 
     toString() `<SlackAccount ${this.name}>`,
 });

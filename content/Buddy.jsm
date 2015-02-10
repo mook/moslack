@@ -66,6 +66,16 @@ function SlackBuddyConversation(aAccount, aBuddy) {
     this._data = {};
     this.buddy = aBuddy;
     this._init(aAccount, aBuddy.name);
+
+    // GenericConvIMPrototype only has getters for DEBUG &c; need to copy
+    // property descriptors from a sacrificial object to override them.
+    let logObject = {};
+    initLogModule(`${this._account.protocol.id}.${this._account.name}.${this.normalizedName}`, logObject);
+    for (let propName of Object.getOwnPropertyNames(logObject)) {
+        Object.defineProperty(this,
+                              propName,
+                              Object.getOwnPropertyDescriptor(logObject, propName));
+    }
 }
 
 SlackBuddyConversation.prototype = Utils.extend(GenericConvIMPrototype,
